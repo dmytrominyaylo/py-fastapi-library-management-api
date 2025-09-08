@@ -34,9 +34,6 @@ def read_author(author_id: int, db: Session = Depends(get_db)):
 
 @app.post("/authors/", response_model=schemas.AuthorSchema)
 def create_author(author_schema: schemas.AuthorCreateSchema, db: Session = Depends(get_db)):
-    existing_author = crud.get_author_by_name(name=author_schema.name, db=db)
-    if existing_author:
-        raise HTTPException(status_code=400, detail="Author with such name already exists")
     return crud.create_author(author_schema=author_schema, db=db)
 
 

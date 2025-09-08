@@ -1,4 +1,6 @@
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
+from fastapi import HTTPException
 import models
 import schemas
 
@@ -10,9 +12,13 @@ def get_all_authors(skip: int, limit: int, db: Session) -> list[models.Author]:
 def create_author(db: Session, author_schema: schemas.AuthorCreateSchema) -> models.Author:
     author = models.Author(name=author_schema.name, bio=author_schema.bio)
     db.add(author)
-    db.commit()
-    db.refresh(author)
-    return author
+    try:
+        db.commit()
+        db.refresh(author)
+        return author
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Author with this name already exists")
 
 
 def get_author(db: Session, author_id: int) -> models.Author:
@@ -42,6 +48,10 @@ def create_book(author_id: int, book_schema: schemas.BookCreateSchema, db: Sessi
         author_id=author_id
     )
     db.add(book)
-    db.commit()
-    db.refresh(book)
-    return book
+    try:
+        db.commit()
+        db.refresh(book)
+        return book
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Book creation failed due to invalid author_id or duplicate")
